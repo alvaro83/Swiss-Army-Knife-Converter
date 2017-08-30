@@ -26,11 +26,14 @@ DEFINES += QT_DEPRECATED_WARNINGS
 SOURCES += \
         main.cpp \
         mainwindow.cpp \
-    temperatureconverter.cpp
+    temperatureconverter.cpp \
+    aboutdialog.cpp
 
 HEADERS += \
         mainwindow.h \
-    temperatureconverter.h
+    temperatureconverter.h \
+    aboutdialog.h
 
 FORMS += \
-        mainwindow.ui
+        mainwindow.ui \
+    aboutdialog.ui

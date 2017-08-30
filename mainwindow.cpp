@@ -1,6 +1,7 @@
 #include "mainwindow.h"
 #include "ui_mainwindow.h"
 #include "temperatureconverter.h"
+#include "aboutdialog.h"
 #include <QMessageBox>
 #include <QGridLayout>
 #include <QPushButton>
@@ -304,4 +305,11 @@ void MainWindow::on_actionCelsius_Fahrenheit_Kelvin_triggered()
     connect(lineEdit, SIGNAL(returnPressed()), this, SLOT(on_lineEdit_celsius_returnPressed()));
     connect(lineEdit_2, SIGNAL(returnPressed()), this, SLOT(on_lineEdit_fahrenheit_returnPressed()));
     connect(lineEdit_3, SIGNAL(returnPressed()), this, SLOT(on_lineEdit_kelvin_returnPressed()));
+}
+
+void MainWindow::on_actionAbout_triggered()
+{
+    AboutDialog aDialog;
+    aDialog.setModal(true);
+    aDialog.exec();
 }
