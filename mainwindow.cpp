@@ -6,6 +6,10 @@
 #include <QGridLayout>
 #include <QPushButton>
 #include <QLineEdit>
+#include <QtNetwork/QNetworkAccessManager>
+#include <QtNetwork/QNetworkReply>
+#include <QJsonDocument>
+#include <QJsonObject>
 
 MainWindow::MainWindow(QWidget *parent) :
     QMainWindow(parent),
@@ -25,6 +29,7 @@ void MainWindow::clearLayout()
 {
     for (auto widget: ui->centralWidget->findChildren<QWidget*>(QString(), Qt::FindDirectChildrenOnly))
         delete widget;
+    delete ui->centralWidget->layout();
 }
 
 /* SETTERS */
@@ -75,6 +80,36 @@ void MainWindow::setKelvin(TemperatureConverter temp)
     ui->centralWidget->findChild<QLineEdit*>("lineEdit_kelvin")->setText(str_k);
 }
 
+void MainWindow::setEUR(float total, double rate)
+{
+    QString str_t;
+    str_t.setNum(total * rate, '.', 2);
+    ui->centralWidget->findChild<QLineEdit*>("lineEdit_euro")->setText(str_t);
+    QString str_r;
+    str_r.setNum(rate);
+    ui->centralWidget->findChild<QLineEdit*>("lineEdit_rate_euro")->setText(str_r);
+}
+
+void MainWindow::setUSD(float total, double rate)
+{
+    QString str_t;
+    str_t.setNum(total * rate, '.', 2);
+    ui->centralWidget->findChild<QLineEdit*>("lineEdit_usd")->setText(str_t);
+    QString str_r;
+    str_r.setNum(rate);
+    ui->centralWidget->findChild<QLineEdit*>("lineEdit_rate_usd")->setText(str_r);
+}
+
+void MainWindow::setJPY(float total, double rate)
+{
+    QString str_t;
+    str_t.setNum(total * rate, '.', 2);
+    ui->centralWidget->findChild<QLineEdit*>("lineEdit_jpy")->setText(str_t);
+    QString str_r;
+    str_r.setNum(rate);
+    ui->centralWidget->findChild<QLineEdit*>("lineEdit_rate_jpy")->setText(str_r);
+}
+
 void MainWindow::showErrorBox()
 {
     QMessageBox msgBox("", "Invalid input!",
@@ -82,6 +117,42 @@ void MainWindow::showErrorBox()
                        nullptr, Qt::WindowTitleHint | Qt::WindowSystemMenuHint);
     msgBox.QDialog::setWindowTitle("Error");
     msgBox.exec();
+}
+
+QByteArray MainWindow::readExchangeRatesURL(QString base)
+{
+    QNetworkAccessManager nam;
+
+    QUrl url("http://api.fixer.io/latest?base=" + base);
+    QNetworkRequest request;
+    request.setUrl(url);
+    QNetworkReply* reply = nam.get(request);
+
+    QEventLoop loop;
+    connect(reply, SIGNAL(finished()), &loop, SLOT(quit()));
+    connect(reply, SIGNAL(error(QNetworkReply::NetworkError)), &loop, SLOT(quit()));
+    loop.exec();
+
+    QByteArray bts = reply->readAll();
+    return bts;
+}
+
+void MainWindow::getExchangeRates(QByteArray byteArray, QMap<QString, double> *eRates)
+{
+    QJsonParseError err;
+    QJsonDocument jsonResponse = QJsonDocument::fromJson(byteArray, &err);
+
+    QJsonObject jsonObject = jsonResponse.object();
+
+    QJsonObject rates = jsonObject["rates"].toObject();
+
+    QMapIterator<QString, double> i(*eRates);
+    while (i.hasNext())
+    {
+        i.next();
+        QJsonValue value = rates.value(i.key());
+        (*eRates)[i.key()] = value.toDouble();
+    }
 }
 
 /* SLOTS */
@@ -232,6 +303,93 @@ void MainWindow::on_lineEdit_kelvin_returnPressed()
     }
 }
 
+void MainWindow::on_lineEdit_euro_returnPressed()
+{
+    QString str = ui->centralWidget->findChild<QLineEdit*>("lineEdit_euro")->text();
+    ui->centralWidget->findChild<QLineEdit*>("lineEdit_usd")->clear();
+    ui->centralWidget->findChild<QLineEdit*>("lineEdit_jpy")->clear();
+    ui->centralWidget->findChild<QLineEdit*>("lineEdit_rate_euro")->clear();
+    ui->centralWidget->findChild<QLineEdit*>("lineEdit_rate_usd")->clear();
+    ui->centralWidget->findChild<QLineEdit*>("lineEdit_rate_jpy")->clear();
+
+    bool ok;
+    float n = str.toFloat(&ok);
+    if(ok)
+    {
+        QByteArray bts = readExchangeRatesURL("EUR");
+
+        QMap<QString, double> rates;
+        rates.insert("USD", 0);
+        rates.insert("JPY", 0);
+        getExchangeRates(bts, &rates);
+
+        setUSD(n, rates.value("USD"));
+        setJPY(n, rates.value("JPY"));
+    }
+    else
+    {
+        showErrorBox();
+    }
+}
+
+void MainWindow::on_lineEdit_usd_returnPressed()
+{
+    QString str = ui->centralWidget->findChild<QLineEdit*>("lineEdit_usd")->text();
+    ui->centralWidget->findChild<QLineEdit*>("lineEdit_euro")->clear();
+    ui->centralWidget->findChild<QLineEdit*>("lineEdit_jpy")->clear();
+    ui->centralWidget->findChild<QLineEdit*>("lineEdit_rate_euro")->clear();
+    ui->centralWidget->findChild<QLineEdit*>("lineEdit_rate_usd")->clear();
+    ui->centralWidget->findChild<QLineEdit*>("lineEdit_rate_jpy")->clear();
+
+    bool ok;
+    float n = str.toFloat(&ok);
+    if(ok)
+    {
+        QByteArray bts = readExchangeRatesURL("USD");
+
+        QMap<QString, double> rates;
+        rates.insert("EUR", 0);
+        rates.insert("JPY", 0);
+        getExchangeRates(bts, &rates);
+
+        setEUR(n, rates.value("EUR"));
+        setJPY(n, rates.value("JPY"));
+    }
+    else
+    {
+        showErrorBox();
+    }
+}
+
+void MainWindow::on_lineEdit_jpy_returnPressed()
+{
+    QString str = ui->centralWidget->findChild<QLineEdit*>("lineEdit_jpy")->text();
+    ui->centralWidget->findChild<QLineEdit*>("lineEdit_usd")->clear();
+    ui->centralWidget->findChild<QLineEdit*>("lineEdit_euro")->clear();
+    ui->centralWidget->findChild<QLineEdit*>("lineEdit_rate_euro")->clear();
+    ui->centralWidget->findChild<QLineEdit*>("lineEdit_rate_usd")->clear();
+    ui->centralWidget->findChild<QLineEdit*>("lineEdit_rate_jpy")->clear();
+
+    bool ok;
+    float n = str.toFloat(&ok);
+    if(ok)
+    {
+        QByteArray bts = readExchangeRatesURL("JPY");
+
+        QMap<QString, double> rates;
+        rates.insert("EUR", 0);
+        rates.insert("USD", 0);
+        getExchangeRates(bts, &rates);
+
+        setEUR(n, rates.value("EUR"));
+        setUSD(n, rates.value("USD"));
+    }
+    else
+    {
+        showErrorBox();
+    }
+}
+
 /* MENU ACTIONS */
 void MainWindow::on_actionBinary_Decimal_Octal_Hexadecimal_triggered()
 {
@@ -259,14 +417,16 @@ void MainWindow::on_actionBinary_Decimal_Octal_Hexadecimal_triggered()
     QLineEdit *lineEdit_4 = new QLineEdit(this);
     lineEdit_4->setObjectName("lineEdit_hex");
 
-    ui->centralWidget->layout()->addWidget(label);
-    ui->centralWidget->layout()->addWidget(lineEdit);
-    ui->centralWidget->layout()->addWidget(label_2);
-    ui->centralWidget->layout()->addWidget(lineEdit_2);
-    ui->centralWidget->layout()->addWidget(label_3);
-    ui->centralWidget->layout()->addWidget(lineEdit_3);
-    ui->centralWidget->layout()->addWidget(label_4);
-    ui->centralWidget->layout()->addWidget(lineEdit_4);
+    QGridLayout *myLayout = new QGridLayout(ui->centralWidget);
+    myLayout->addWidget(label, 0, 0);
+    myLayout->addWidget(lineEdit, 0, 1);
+    myLayout->addWidget(label_2, 1, 0);
+    myLayout->addWidget(lineEdit_2, 1, 1);
+    myLayout->addWidget(label_3, 2, 0);
+    myLayout->addWidget(lineEdit_3, 2, 1);
+    myLayout->addWidget(label_4, 3, 0);
+    myLayout->addWidget(lineEdit_4, 3, 1);
+    ui->centralWidget->setLayout(myLayout);
 
     connect(lineEdit, SIGNAL(returnPressed()), this, SLOT(on_lineEdit_bin_returnPressed()));
     connect(lineEdit_2, SIGNAL(returnPressed()), this, SLOT(on_lineEdit_dec_returnPressed()));
@@ -295,12 +455,14 @@ void MainWindow::on_actionCelsius_Fahrenheit_Kelvin_triggered()
     QLineEdit *lineEdit_3 = new QLineEdit(this);
     lineEdit_3->setObjectName("lineEdit_kelvin");
 
-    ui->centralWidget->layout()->addWidget(label);
-    ui->centralWidget->layout()->addWidget(lineEdit);
-    ui->centralWidget->layout()->addWidget(label_2);
-    ui->centralWidget->layout()->addWidget(lineEdit_2);
-    ui->centralWidget->layout()->addWidget(label_3);
-    ui->centralWidget->layout()->addWidget(lineEdit_3);
+    QGridLayout *myLayout = new QGridLayout(ui->centralWidget);
+    myLayout->addWidget(label, 0, 0);
+    myLayout->addWidget(lineEdit, 0, 1);
+    myLayout->addWidget(label_2, 1, 0);
+    myLayout->addWidget(lineEdit_2, 1, 1);
+    myLayout->addWidget(label_3, 2, 0);
+    myLayout->addWidget(lineEdit_3, 2, 1);
+    ui->centralWidget->setLayout(myLayout);
 
     connect(lineEdit, SIGNAL(returnPressed()), this, SLOT(on_lineEdit_celsius_returnPressed()));
     connect(lineEdit_2, SIGNAL(returnPressed()), this, SLOT(on_lineEdit_fahrenheit_returnPressed()));
@@ -312,4 +474,60 @@ void MainWindow::on_actionAbout_triggered()
     AboutDialog aDialog;
     aDialog.setModal(true);
     aDialog.exec();
+}
+
+void MainWindow::on_actionCurrent_exchange_rates_triggered()
+{
+    clearLayout();
+
+    QLabel *label = new QLabel(this);
+    label->setObjectName("label_euro");
+    label->setText("EUR");
+    QLabel *label_b = new QLabel(this);
+    label_b->setObjectName("label_rate_euro");
+    label_b->setText("Exchange rate");
+    QLabel *label_2 = new QLabel(this);
+    label_2->setObjectName("label_usd");
+    label_2->setText("USD");
+    QLabel *label_2_b = new QLabel(this);
+    label_2_b->setObjectName("label_rate_usd");
+    label_2_b->setText("Exchange rate");
+    QLabel *label_3 = new QLabel(this);
+    label_3->setObjectName("label_jpy");
+    label_3->setText("JPY");
+    QLabel *label_3_b = new QLabel(this);
+    label_3_b->setObjectName("label_rate_jpy");
+    label_3_b->setText("Exchange rate");
+
+    QLineEdit *lineEdit = new QLineEdit(this);
+    lineEdit->setObjectName("lineEdit_euro");
+    QLineEdit *lineEdit_b = new QLineEdit(this);
+    lineEdit_b->setObjectName("lineEdit_rate_euro");
+    QLineEdit *lineEdit_2 = new QLineEdit(this);
+    lineEdit_2->setObjectName("lineEdit_usd");
+    QLineEdit *lineEdit_2_b = new QLineEdit(this);
+    lineEdit_2_b->setObjectName("lineEdit_rate_usd");
+    QLineEdit *lineEdit_3 = new QLineEdit(this);
+    lineEdit_3->setObjectName("lineEdit_jpy");
+    QLineEdit *lineEdit_3_b = new QLineEdit(this);
+    lineEdit_3_b->setObjectName("lineEdit_rate_jpy");
+
+    QGridLayout *myLayout = new QGridLayout(ui->centralWidget);
+    myLayout->addWidget(label, 0, 0);
+    myLayout->addWidget(lineEdit, 0, 1);
+    myLayout->addWidget(label_b, 0, 2);
+    myLayout->addWidget(lineEdit_b, 0, 3);
+    myLayout->addWidget(label_2, 1, 0);
+    myLayout->addWidget(lineEdit_2, 1, 1);
+    myLayout->addWidget(label_2_b, 1, 2);
+    myLayout->addWidget(lineEdit_2_b, 1, 3);
+    myLayout->addWidget(label_3, 2, 0);
+    myLayout->addWidget(lineEdit_3, 2, 1);
+    myLayout->addWidget(label_3_b, 2, 2);
+    myLayout->addWidget(lineEdit_3_b, 2, 3);
+    ui->centralWidget->setLayout(myLayout);
+
+    connect(lineEdit, SIGNAL(returnPressed()), this, SLOT(on_lineEdit_euro_returnPressed()));
+    connect(lineEdit_2, SIGNAL(returnPressed()), this, SLOT(on_lineEdit_usd_returnPressed()));
+    connect(lineEdit_3, SIGNAL(returnPressed()), this, SLOT(on_lineEdit_jpy_returnPressed()));
 }

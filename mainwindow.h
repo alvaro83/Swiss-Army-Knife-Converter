@@ -2,6 +2,7 @@
 #define MAINWINDOW_H
 
 #include <QMainWindow>
+#include <QtNetwork/QNetworkReply>
 #include "temperatureconverter.h"
 
 namespace Ui {
@@ -31,11 +32,19 @@ private slots:
 
     void on_lineEdit_kelvin_returnPressed();
 
+    void on_lineEdit_euro_returnPressed();
+
+    void on_lineEdit_usd_returnPressed();
+
+    void on_lineEdit_jpy_returnPressed();
+
     void on_actionBinary_Decimal_Octal_Hexadecimal_triggered();
 
     void on_actionCelsius_Fahrenheit_Kelvin_triggered();
 
     void on_actionAbout_triggered();
+
+    void on_actionCurrent_exchange_rates_triggered();
 
 private:
     Ui::MainWindow *ui;
@@ -54,9 +63,19 @@ private:
 
     void setKelvin(TemperatureConverter temp);
 
+    void setEUR(float total, double rate);
+
+    void setUSD(float total, double rate);
+
+    void setJPY(float total, double rate);
+
     void showErrorBox();
 
     void clearLayout();
+
+    QByteArray readExchangeRatesURL(QString base);
+
+    void getExchangeRates(QByteArray byteArray, QMap<QString, double> *eRates);
 
 };
 

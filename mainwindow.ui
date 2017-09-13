@@ -86,8 +86,15 @@
       </property>
       <addaction name="actionCelsius_Fahrenheit_Kelvin"/>
      </widget>
+     <widget class="QMenu" name="menuCurrency">
+      <property name="title">
+       <string>Currency</string>
+      </property>
+      <addaction name="actionCurrent_exchange_rates"/>
+     </widget>
      <addaction name="menuMath"/>
      <addaction name="menuPhysics"/>
+     <addaction name="menuCurrency"/>
     </widget>
     <addaction name="menuConversion"/>
     <addaction name="separator"/>
@@ -129,6 +136,11 @@
   <action name="actionExit">
    <property name="text">
     <string>Exit</string>
+   </property>
+  </action>
+  <action name="actionCurrent_exchange_rates">
+   <property name="text">
+    <string>Current exchange rates</string>
    </property>
   </action>
  </widget>
