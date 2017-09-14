@@ -5,7 +5,8 @@
 #-------------------------------------------------
 
 QT       += core gui \
-            network
+            network  \
+            charts
 
 greaterThan(QT_MAJOR_VERSION, 4): QT += widgets
 
@@ -27,12 +28,14 @@ SOURCES += \
         main.cpp \
         mainwindow.cpp \
     temperatureconverter.cpp \
-    aboutdialog.cpp
+    aboutdialog.cpp \
+    currencyconverter.cpp
 
 HEADERS += \
         mainwindow.h \
     temperatureconverter.h \
-    aboutdialog.h
+    aboutdialog.h \
+    currencyconverter.h
 
 FORMS += \
         mainwindow.ui \

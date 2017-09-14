@@ -1,6 +1,7 @@
 #include "mainwindow.h"
 #include "ui_mainwindow.h"
 #include "temperatureconverter.h"
+#include "currencyconverter.h"
 #include "aboutdialog.h"
 #include <QMessageBox>
 #include <QGridLayout>
@@ -10,6 +11,11 @@
 #include <QtNetwork/QNetworkReply>
 #include <QJsonDocument>
 #include <QJsonObject>
+#include <QtCharts/QLineSeries>
+#include <QtCharts/QChart>
+#include <QtCharts/QChartView>
+#include <QtCharts/QDateTimeAxis>
+#include <QtCharts/QValueAxis>
 
 MainWindow::MainWindow(QWidget *parent) :
     QMainWindow(parent),
@@ -25,6 +31,12 @@ MainWindow::~MainWindow()
     delete ui;
 }
 
+template<typename T>
+inline T MainWindow::getWidget(QString name) const
+{
+    return static_cast<T>(ui->centralWidget->findChild<T>(name));
+}
+
 void MainWindow::clearLayout()
 {
     for (auto widget: ui->centralWidget->findChildren<QWidget*>(QString(), Qt::FindDirectChildrenOnly))
@@ -32,369 +44,8 @@ void MainWindow::clearLayout()
     delete ui->centralWidget->layout();
 }
 
-/* SETTERS */
-void MainWindow::setBin(int n)
+void MainWindow::createNumericRepresentationLayout()
 {
-    QString bin;
-    bin.setNum(n, 2);
-    ui->centralWidget->findChild<QLineEdit*>("lineEdit_bin")->setText(bin);
-}
-
-void MainWindow::setDec(int n)
-{
-    ui->centralWidget->findChild<QLineEdit*>("lineEdit_dec")->setText(QString::number(n));
-}
-
-void MainWindow::setOct(int n)
-{
-    QString octal;
-    octal.setNum(n, 8);
-    ui->centralWidget->findChild<QLineEdit*>("lineEdit_oct")->setText(octal);
-}
-
-void MainWindow::setHex(int n)
-{
-    QString hex;
-    hex.setNum(n, 16);
-    ui->centralWidget->findChild<QLineEdit*>("lineEdit_hex")->setText(hex);
-}
-
-void MainWindow::setFahrenheit(TemperatureConverter temp)
-{
-    QString str_f;
-    str_f.setNum(temp.getFahrenheit(), '.', 1);
-    ui->centralWidget->findChild<QLineEdit*>("lineEdit_fahrenheit")->setText(str_f);
-}
-
-void MainWindow::setCelsius(TemperatureConverter temp)
-{
-    QString str_c;
-    str_c.setNum(temp.getCelsius(), '.', 1);
-    ui->centralWidget->findChild<QLineEdit*>("lineEdit_celsius")->setText(str_c);
-}
-
-void MainWindow::setKelvin(TemperatureConverter temp)
-{
-    QString str_k;
-    str_k.setNum(temp.getKelvin(), '.', 2);
-    ui->centralWidget->findChild<QLineEdit*>("lineEdit_kelvin")->setText(str_k);
-}
-
-void MainWindow::setEUR(float total, double rate)
-{
-    QString str_t;
-    str_t.setNum(total * rate, '.', 2);
-    ui->centralWidget->findChild<QLineEdit*>("lineEdit_euro")->setText(str_t);
-    QString str_r;
-    str_r.setNum(rate);
-    ui->centralWidget->findChild<QLineEdit*>("lineEdit_rate_euro")->setText(str_r);
-}
-
-void MainWindow::setUSD(float total, double rate)
-{
-    QString str_t;
-    str_t.setNum(total * rate, '.', 2);
-    ui->centralWidget->findChild<QLineEdit*>("lineEdit_usd")->setText(str_t);
-    QString str_r;
-    str_r.setNum(rate);
-    ui->centralWidget->findChild<QLineEdit*>("lineEdit_rate_usd")->setText(str_r);
-}
-
-void MainWindow::setJPY(float total, double rate)
-{
-    QString str_t;
-    str_t.setNum(total * rate, '.', 2);
-    ui->centralWidget->findChild<QLineEdit*>("lineEdit_jpy")->setText(str_t);
-    QString str_r;
-    str_r.setNum(rate);
-    ui->centralWidget->findChild<QLineEdit*>("lineEdit_rate_jpy")->setText(str_r);
-}
-
-void MainWindow::showErrorBox()
-{
-    QMessageBox msgBox("", "Invalid input!",
-                       QMessageBox::Critical, 0, 0, 0,
-                       nullptr, Qt::WindowTitleHint | Qt::WindowSystemMenuHint);
-    msgBox.QDialog::setWindowTitle("Error");
-    msgBox.exec();
-}
-
-QByteArray MainWindow::readExchangeRatesURL(QString base)
-{
-    QNetworkAccessManager nam;
-
-    QUrl url("http://api.fixer.io/latest?base=" + base);
-    QNetworkRequest request;
-    request.setUrl(url);
-    QNetworkReply* reply = nam.get(request);
-
-    QEventLoop loop;
-    connect(reply, SIGNAL(finished()), &loop, SLOT(quit()));
-    connect(reply, SIGNAL(error(QNetworkReply::NetworkError)), &loop, SLOT(quit()));
-    loop.exec();
-
-    QByteArray bts = reply->readAll();
-    return bts;
-}
-
-void MainWindow::getExchangeRates(QByteArray byteArray, QMap<QString, double> *eRates)
-{
-    QJsonParseError err;
-    QJsonDocument jsonResponse = QJsonDocument::fromJson(byteArray, &err);
-
-    QJsonObject jsonObject = jsonResponse.object();
-
-    QJsonObject rates = jsonObject["rates"].toObject();
-
-    QMapIterator<QString, double> i(*eRates);
-    while (i.hasNext())
-    {
-        i.next();
-        QJsonValue value = rates.value(i.key());
-        (*eRates)[i.key()] = value.toDouble();
-    }
-}
-
-/* SLOTS */
-void MainWindow::on_lineEdit_bin_returnPressed()
-{
-    QString str = ui->centralWidget->findChild<QLineEdit*>("lineEdit_bin")->text();
-    ui->centralWidget->findChild<QLineEdit*>("lineEdit_dec")->clear();
-    ui->centralWidget->findChild<QLineEdit*>("lineEdit_oct")->clear();
-    ui->centralWidget->findChild<QLineEdit*>("lineEdit_hex")->clear();
-
-    bool ok;
-    int n = str.toInt(&ok, 2);
-    if(ok)
-    {
-        setDec(n);
-        setOct(n);
-        setHex(n);
-    }
-    else
-    {
-        showErrorBox();
-    }
-}
-
-void MainWindow::on_lineEdit_dec_returnPressed()
-{
-    QString str = ui->centralWidget->findChild<QLineEdit*>("lineEdit_dec")->text();
-    ui->centralWidget->findChild<QLineEdit*>("lineEdit_bin")->clear();
-    ui->centralWidget->findChild<QLineEdit*>("lineEdit_oct")->clear();
-    ui->centralWidget->findChild<QLineEdit*>("lineEdit_hex")->clear();
-
-    bool ok;
-    int n = str.toInt(&ok, 10);
-    if(ok)
-    {
-        setBin(n);
-        setOct(n);
-        setHex(n);
-    }
-    else
-    {
-        showErrorBox();
-    }
-}
-
-void MainWindow::on_lineEdit_oct_returnPressed()
-{
-    QString str = ui->centralWidget->findChild<QLineEdit*>("lineEdit_oct")->text();
-    ui->centralWidget->findChild<QLineEdit*>("lineEdit_bin")->clear();
-    ui->centralWidget->findChild<QLineEdit*>("lineEdit_dec")->clear();
-    ui->centralWidget->findChild<QLineEdit*>("lineEdit_hex")->clear();
-
-    bool ok;
-    int n = str.toInt(&ok, 8);
-    if(ok)
-    {
-        setBin(n);
-        setDec(n);
-        setHex(n);
-    }
-    else
-    {
-        showErrorBox();
-    }
-}
-
-void MainWindow::on_lineEdit_hex_returnPressed()
-{
-    QString str = ui->centralWidget->findChild<QLineEdit*>("lineEdit_hex")->text();
-    ui->centralWidget->findChild<QLineEdit*>("lineEdit_bin")->clear();
-    ui->centralWidget->findChild<QLineEdit*>("lineEdit_dec")->clear();
-    ui->centralWidget->findChild<QLineEdit*>("lineEdit_oct")->clear();
-
-    bool ok;
-    int n = str.toInt(&ok, 16);
-    if(ok)
-    {
-        setBin(n);
-        setDec(n);
-        setOct(n);
-    }
-    else
-    {
-        showErrorBox();
-    }
-}
-
-void MainWindow::on_lineEdit_celsius_returnPressed()
-{
-    QString str = ui->centralWidget->findChild<QLineEdit*>("lineEdit_celsius")->text();
-    ui->centralWidget->findChild<QLineEdit*>("lineEdit_fahrenheit")->clear();
-    ui->centralWidget->findChild<QLineEdit*>("lineEdit_kelvin")->clear();
-
-    bool ok;
-    float n = str.toFloat(&ok);
-    if(ok)
-    {
-        TemperatureConverter temp;
-        temp.setCelsius(n);
-        setFahrenheit(temp);
-        setKelvin(temp);
-    }
-    else
-    {
-        showErrorBox();
-    }
-}
-
-void MainWindow::on_lineEdit_fahrenheit_returnPressed()
-{
-    QString str = ui->centralWidget->findChild<QLineEdit*>("lineEdit_fahrenheit")->text();
-    ui->centralWidget->findChild<QLineEdit*>("lineEdit_celsius")->clear();
-    ui->centralWidget->findChild<QLineEdit*>("lineEdit_kelvin")->clear();
-
-    bool ok;
-    float n = str.toFloat(&ok);
-    if(ok)
-    {
-        TemperatureConverter temp;
-        temp.setFahrenheit(n);
-        setCelsius(temp);
-        setKelvin(temp);
-    }
-    else
-    {
-        showErrorBox();
-    }
-}
-
-void MainWindow::on_lineEdit_kelvin_returnPressed()
-{
-    QString str = ui->centralWidget->findChild<QLineEdit*>("lineEdit_kelvin")->text();
-    ui->centralWidget->findChild<QLineEdit*>("lineEdit_celsius")->clear();
-    ui->centralWidget->findChild<QLineEdit*>("lineEdit_fahrenheit")->clear();
-
-    bool ok;
-    float n = str.toFloat(&ok);
-    if(ok)
-    {
-        TemperatureConverter temp;
-        temp.setKelvin(n);
-        setCelsius(temp);
-        setFahrenheit(temp);
-    }
-    else
-    {
-        showErrorBox();
-    }
-}
-
-void MainWindow::on_lineEdit_euro_returnPressed()
-{
-    QString str = ui->centralWidget->findChild<QLineEdit*>("lineEdit_euro")->text();
-    ui->centralWidget->findChild<QLineEdit*>("lineEdit_usd")->clear();
-    ui->centralWidget->findChild<QLineEdit*>("lineEdit_jpy")->clear();
-    ui->centralWidget->findChild<QLineEdit*>("lineEdit_rate_euro")->clear();
-    ui->centralWidget->findChild<QLineEdit*>("lineEdit_rate_usd")->clear();
-    ui->centralWidget->findChild<QLineEdit*>("lineEdit_rate_jpy")->clear();
-
-    bool ok;
-    float n = str.toFloat(&ok);
-    if(ok)
-    {
-        QByteArray bts = readExchangeRatesURL("EUR");
-
-        QMap<QString, double> rates;
-        rates.insert("USD", 0);
-        rates.insert("JPY", 0);
-        getExchangeRates(bts, &rates);
-
-        setUSD(n, rates.value("USD"));
-        setJPY(n, rates.value("JPY"));
-    }
-    else
-    {
-        showErrorBox();
-    }
-}
-
-void MainWindow::on_lineEdit_usd_returnPressed()
-{
-    QString str = ui->centralWidget->findChild<QLineEdit*>("lineEdit_usd")->text();
-    ui->centralWidget->findChild<QLineEdit*>("lineEdit_euro")->clear();
-    ui->centralWidget->findChild<QLineEdit*>("lineEdit_jpy")->clear();
-    ui->centralWidget->findChild<QLineEdit*>("lineEdit_rate_euro")->clear();
-    ui->centralWidget->findChild<QLineEdit*>("lineEdit_rate_usd")->clear();
-    ui->centralWidget->findChild<QLineEdit*>("lineEdit_rate_jpy")->clear();
-
-    bool ok;
-    float n = str.toFloat(&ok);
-    if(ok)
-    {
-        QByteArray bts = readExchangeRatesURL("USD");
-
-        QMap<QString, double> rates;
-        rates.insert("EUR", 0);
-        rates.insert("JPY", 0);
-        getExchangeRates(bts, &rates);
-
-        setEUR(n, rates.value("EUR"));
-        setJPY(n, rates.value("JPY"));
-    }
-    else
-    {
-        showErrorBox();
-    }
-}
-
-void MainWindow::on_lineEdit_jpy_returnPressed()
-{
-    QString str = ui->centralWidget->findChild<QLineEdit*>("lineEdit_jpy")->text();
-    ui->centralWidget->findChild<QLineEdit*>("lineEdit_usd")->clear();
-    ui->centralWidget->findChild<QLineEdit*>("lineEdit_euro")->clear();
-    ui->centralWidget->findChild<QLineEdit*>("lineEdit_rate_euro")->clear();
-    ui->centralWidget->findChild<QLineEdit*>("lineEdit_rate_usd")->clear();
-    ui->centralWidget->findChild<QLineEdit*>("lineEdit_rate_jpy")->clear();
-
-    bool ok;
-    float n = str.toFloat(&ok);
-    if(ok)
-    {
-        QByteArray bts = readExchangeRatesURL("JPY");
-
-        QMap<QString, double> rates;
-        rates.insert("EUR", 0);
-        rates.insert("USD", 0);
-        getExchangeRates(bts, &rates);
-
-        setEUR(n, rates.value("EUR"));
-        setUSD(n, rates.value("USD"));
-    }
-    else
-    {
-        showErrorBox();
-    }
-}
-
-/* MENU ACTIONS */
-void MainWindow::on_actionBinary_Decimal_Octal_Hexadecimal_triggered()
-{
-    clearLayout();
-
     QLabel *label = new QLabel(this);
     label->setObjectName("label_bin");
     label->setText("Binary");
@@ -427,17 +78,10 @@ void MainWindow::on_actionBinary_Decimal_Octal_Hexadecimal_triggered()
     myLayout->addWidget(label_4, 3, 0);
     myLayout->addWidget(lineEdit_4, 3, 1);
     ui->centralWidget->setLayout(myLayout);
-
-    connect(lineEdit, SIGNAL(returnPressed()), this, SLOT(on_lineEdit_bin_returnPressed()));
-    connect(lineEdit_2, SIGNAL(returnPressed()), this, SLOT(on_lineEdit_dec_returnPressed()));
-    connect(lineEdit_3, SIGNAL(returnPressed()), this, SLOT(on_lineEdit_oct_returnPressed()));
-    connect(lineEdit_4, SIGNAL(returnPressed()), this, SLOT(on_lineEdit_hex_returnPressed()));
 }
 
-void MainWindow::on_actionCelsius_Fahrenheit_Kelvin_triggered()
+void MainWindow::createTemperatureConversionLayout()
 {
-    clearLayout();
-
     QLabel *label = new QLabel(this);
     label->setObjectName("label_celsius");
     label->setText("ºC");
@@ -463,23 +107,10 @@ void MainWindow::on_actionCelsius_Fahrenheit_Kelvin_triggered()
     myLayout->addWidget(label_3, 2, 0);
     myLayout->addWidget(lineEdit_3, 2, 1);
     ui->centralWidget->setLayout(myLayout);
-
-    connect(lineEdit, SIGNAL(returnPressed()), this, SLOT(on_lineEdit_celsius_returnPressed()));
-    connect(lineEdit_2, SIGNAL(returnPressed()), this, SLOT(on_lineEdit_fahrenheit_returnPressed()));
-    connect(lineEdit_3, SIGNAL(returnPressed()), this, SLOT(on_lineEdit_kelvin_returnPressed()));
 }
 
-void MainWindow::on_actionAbout_triggered()
+void MainWindow::createCurrencyConversionLayout()
 {
-    AboutDialog aDialog;
-    aDialog.setModal(true);
-    aDialog.exec();
-}
-
-void MainWindow::on_actionCurrent_exchange_rates_triggered()
-{
-    clearLayout();
-
     QLabel *label = new QLabel(this);
     label->setObjectName("label_euro");
     label->setText("EUR");
@@ -526,8 +157,408 @@ void MainWindow::on_actionCurrent_exchange_rates_triggered()
     myLayout->addWidget(label_3_b, 2, 2);
     myLayout->addWidget(lineEdit_3_b, 2, 3);
     ui->centralWidget->setLayout(myLayout);
+}
 
-    connect(lineEdit, SIGNAL(returnPressed()), this, SLOT(on_lineEdit_euro_returnPressed()));
-    connect(lineEdit_2, SIGNAL(returnPressed()), this, SLOT(on_lineEdit_usd_returnPressed()));
-    connect(lineEdit_3, SIGNAL(returnPressed()), this, SLOT(on_lineEdit_jpy_returnPressed()));
+/* SETTERS */
+void MainWindow::setBin(int n)
+{
+    QString bin;
+    bin.setNum(n, 2);
+    getWidget<QLineEdit*>("lineEdit_bin")->setText(bin);
+}
+
+void MainWindow::setDec(int n)
+{
+    getWidget<QLineEdit*>("lineEdit_dec")->setText(QString::number(n));
+}
+
+void MainWindow::setOct(int n)
+{
+    QString octal;
+    octal.setNum(n, 8);
+    getWidget<QLineEdit*>("lineEdit_oct")->setText(octal);
+}
+
+void MainWindow::setHex(int n)
+{
+    QString hex;
+    hex.setNum(n, 16);
+    getWidget<QLineEdit*>("lineEdit_hex")->setText(hex);
+}
+
+void MainWindow::setFahrenheit(TemperatureConverter temp)
+{
+    QString str_f;
+    str_f.setNum(temp.getFahrenheit(), '.', 1);
+    getWidget<QLineEdit*>("lineEdit_fahrenheit")->setText(str_f);
+}
+
+void MainWindow::setCelsius(TemperatureConverter temp)
+{
+    QString str_c;
+    str_c.setNum(temp.getCelsius(), '.', 1);
+    getWidget<QLineEdit*>("lineEdit_celsius")->setText(str_c);
+}
+
+void MainWindow::setKelvin(TemperatureConverter temp)
+{
+    QString str_k;
+    str_k.setNum(temp.getKelvin(), '.', 2);
+    getWidget<QLineEdit*>("lineEdit_kelvin")->setText(str_k);
+}
+
+void MainWindow::setEUR(float total, double rate)
+{
+    QString str_t;
+    str_t.setNum(total * rate, '.', 2);
+    getWidget<QLineEdit*>("lineEdit_euro")->setText(str_t);
+    QString str_r;
+    str_r.setNum(rate);
+    getWidget<QLineEdit*>("lineEdit_rate_euro")->setText(str_r);
+}
+
+void MainWindow::setUSD(float total, double rate)
+{
+    QString str_t;
+    str_t.setNum(total * rate, '.', 2);
+    getWidget<QLineEdit*>("lineEdit_usd")->setText(str_t);
+    QString str_r;
+    str_r.setNum(rate);
+    getWidget<QLineEdit*>("lineEdit_rate_usd")->setText(str_r);
+}
+
+void MainWindow::setJPY(float total, double rate)
+{
+    QString str_t;
+    str_t.setNum(total * rate, '.', 2);
+    getWidget<QLineEdit*>("lineEdit_jpy")->setText(str_t);
+    QString str_r;
+    str_r.setNum(rate);
+    getWidget<QLineEdit*>("lineEdit_rate_jpy")->setText(str_r);
+}
+
+void MainWindow::showErrorBox()
+{
+    QMessageBox msgBox("", "Invalid input!",
+                       QMessageBox::Critical, 0, 0, 0,
+                       nullptr, Qt::WindowTitleHint | Qt::WindowSystemMenuHint);
+    msgBox.QDialog::setWindowTitle("Error");
+    msgBox.exec();
+}
+
+/* SLOTS */
+void MainWindow::on_lineEdit_bin_returnPressed()
+{
+    QString str = getWidget<QLineEdit*>("lineEdit_bin")->text();
+    getWidget<QLineEdit*>("lineEdit_dec")->clear();
+    getWidget<QLineEdit*>("lineEdit_oct")->clear();
+    getWidget<QLineEdit*>("lineEdit_hex")->clear();
+
+    bool ok;
+    int n = str.toInt(&ok, 2);
+    if(ok)
+    {
+        setDec(n);
+        setOct(n);
+        setHex(n);
+    }
+    else
+    {
+        showErrorBox();
+    }
+}
+
+void MainWindow::on_lineEdit_dec_returnPressed()
+{
+    QString str = getWidget<QLineEdit*>("lineEdit_dec")->text();
+    getWidget<QLineEdit*>("lineEdit_bin")->clear();
+    getWidget<QLineEdit*>("lineEdit_oct")->clear();
+    getWidget<QLineEdit*>("lineEdit_hex")->clear();
+
+    bool ok;
+    int n = str.toInt(&ok, 10);
+    if(ok)
+    {
+        setBin(n);
+        setOct(n);
+        setHex(n);
+    }
+    else
+    {
+        showErrorBox();
+    }
+}
+
+void MainWindow::on_lineEdit_oct_returnPressed()
+{
+    QString str = getWidget<QLineEdit*>("lineEdit_oct")->text();
+    getWidget<QLineEdit*>("lineEdit_bin")->clear();
+    getWidget<QLineEdit*>("lineEdit_dec")->clear();
+    getWidget<QLineEdit*>("lineEdit_hex")->clear();
+
+    bool ok;
+    int n = str.toInt(&ok, 8);
+    if(ok)
+    {
+        setBin(n);
+        setDec(n);
+        setHex(n);
+    }
+    else
+    {
+        showErrorBox();
+    }
+}
+
+void MainWindow::on_lineEdit_hex_returnPressed()
+{
+    QString str = getWidget<QLineEdit*>("lineEdit_hex")->text();
+    getWidget<QLineEdit*>("lineEdit_bin")->clear();
+    getWidget<QLineEdit*>("lineEdit_dec")->clear();
+    getWidget<QLineEdit*>("lineEdit_oct")->clear();
+
+    bool ok;
+    int n = str.toInt(&ok, 16);
+    if(ok)
+    {
+        setBin(n);
+        setDec(n);
+        setOct(n);
+    }
+    else
+    {
+        showErrorBox();
+    }
+}
+
+void MainWindow::on_lineEdit_celsius_returnPressed()
+{
+    QString str = getWidget<QLineEdit*>("lineEdit_celsius")->text();
+    getWidget<QLineEdit*>("lineEdit_fahrenheit")->clear();
+    getWidget<QLineEdit*>("lineEdit_kelvin")->clear();
+
+    bool ok;
+    float n = str.toFloat(&ok);
+    if(ok)
+    {
+        TemperatureConverter temp;
+        temp.setCelsius(n);
+        setFahrenheit(temp);
+        setKelvin(temp);
+    }
+    else
+    {
+        showErrorBox();
+    }
+}
+
+void MainWindow::on_lineEdit_fahrenheit_returnPressed()
+{
+    QString str = getWidget<QLineEdit*>("lineEdit_fahrenheit")->text();
+    getWidget<QLineEdit*>("lineEdit_celsius")->clear();
+    getWidget<QLineEdit*>("lineEdit_kelvin")->clear();
+
+    bool ok;
+    float n = str.toFloat(&ok);
+    if(ok)
+    {
+        TemperatureConverter temp;
+        temp.setFahrenheit(n);
+        setCelsius(temp);
+        setKelvin(temp);
+    }
+    else
+    {
+        showErrorBox();
+    }
+}
+
+void MainWindow::on_lineEdit_kelvin_returnPressed()
+{
+    QString str = getWidget<QLineEdit*>("lineEdit_kelvin")->text();
+    getWidget<QLineEdit*>("lineEdit_celsius")->clear();
+    getWidget<QLineEdit*>("lineEdit_fahrenheit")->clear();
+
+    bool ok;
+    float n = str.toFloat(&ok);
+    if(ok)
+    {
+        TemperatureConverter temp;
+        temp.setKelvin(n);
+        setCelsius(temp);
+        setFahrenheit(temp);
+    }
+    else
+    {
+        showErrorBox();
+    }
+}
+
+void MainWindow::on_lineEdit_euro_returnPressed()
+{
+    QString str = getWidget<QLineEdit*>("lineEdit_euro")->text();
+    getWidget<QLineEdit*>("lineEdit_usd")->clear();
+    getWidget<QLineEdit*>("lineEdit_jpy")->clear();
+    getWidget<QLineEdit*>("lineEdit_rate_euro")->clear();
+    getWidget<QLineEdit*>("lineEdit_rate_usd")->clear();
+    getWidget<QLineEdit*>("lineEdit_rate_jpy")->clear();
+
+    bool ok;
+    float n = str.toFloat(&ok);
+    if(ok)
+    {
+        CurrencyConverter curr("EUR");
+
+        setUSD(n, curr.getRate("USD"));
+        setJPY(n, curr.getRate("JPY"));
+    }
+    else
+    {
+        showErrorBox();
+    }
+}
+
+void MainWindow::on_lineEdit_usd_returnPressed()
+{
+    QString str = getWidget<QLineEdit*>("lineEdit_usd")->text();
+    getWidget<QLineEdit*>("lineEdit_euro")->clear();
+    getWidget<QLineEdit*>("lineEdit_jpy")->clear();
+    getWidget<QLineEdit*>("lineEdit_rate_euro")->clear();
+    getWidget<QLineEdit*>("lineEdit_rate_usd")->clear();
+    getWidget<QLineEdit*>("lineEdit_rate_jpy")->clear();
+
+    bool ok;
+    float n = str.toFloat(&ok);
+    if(ok)
+    {
+        CurrencyConverter curr("USD");
+
+        setEUR(n, curr.getRate("EUR"));
+        setJPY(n, curr.getRate("JPY"));
+    }
+    else
+    {
+        showErrorBox();
+    }
+}
+
+void MainWindow::on_lineEdit_jpy_returnPressed()
+{
+    QString str = getWidget<QLineEdit*>("lineEdit_jpy")->text();
+    getWidget<QLineEdit*>("lineEdit_usd")->clear();
+    getWidget<QLineEdit*>("lineEdit_euro")->clear();
+    getWidget<QLineEdit*>("lineEdit_rate_euro")->clear();
+    getWidget<QLineEdit*>("lineEdit_rate_usd")->clear();
+    getWidget<QLineEdit*>("lineEdit_rate_jpy")->clear();
+
+    bool ok;
+    float n = str.toFloat(&ok);
+    if(ok)
+    {
+        CurrencyConverter curr("JPY");
+
+        setEUR(n, curr.getRate("EUR"));
+        setUSD(n, curr.getRate("USD"));
+    }
+    else
+    {
+        showErrorBox();
+    }
+}
+
+/* MENU ACTIONS */
+void MainWindow::on_actionBinary_Decimal_Octal_Hexadecimal_triggered()
+{
+    clearLayout();
+
+    createNumericRepresentationLayout();
+
+    connect(getWidget<QLineEdit*>("lineEdit_bin"), SIGNAL(returnPressed()), this, SLOT(on_lineEdit_bin_returnPressed()));
+    connect(getWidget<QLineEdit*>("lineEdit_dec"), SIGNAL(returnPressed()), this, SLOT(on_lineEdit_dec_returnPressed()));
+    connect(getWidget<QLineEdit*>("lineEdit_oct"), SIGNAL(returnPressed()), this, SLOT(on_lineEdit_oct_returnPressed()));
+    connect(getWidget<QLineEdit*>("lineEdit_hex"), SIGNAL(returnPressed()), this, SLOT(on_lineEdit_hex_returnPressed()));
+}
+
+void MainWindow::on_actionCelsius_Fahrenheit_Kelvin_triggered()
+{
+    clearLayout();
+
+    createTemperatureConversionLayout();
+
+    connect(getWidget<QLineEdit*>("lineEdit_celsius"), SIGNAL(returnPressed()), this, SLOT(on_lineEdit_celsius_returnPressed()));
+    connect(getWidget<QLineEdit*>("lineEdit_fahrenheit"), SIGNAL(returnPressed()), this, SLOT(on_lineEdit_fahrenheit_returnPressed()));
+    connect(getWidget<QLineEdit*>("lineEdit_kelvin"), SIGNAL(returnPressed()), this, SLOT(on_lineEdit_kelvin_returnPressed()));
+}
+
+void MainWindow::on_actionAbout_triggered()
+{
+    AboutDialog aDialog;
+    aDialog.setModal(true);
+    aDialog.exec();
+}
+
+void MainWindow::on_actionCurrent_exchange_rates_triggered()
+{
+    clearLayout();
+
+    createCurrencyConversionLayout();
+
+    connect(getWidget<QLineEdit*>("lineEdit_euro"), SIGNAL(returnPressed()), this, SLOT(on_lineEdit_euro_returnPressed()));
+    connect(getWidget<QLineEdit*>("lineEdit_usd"), SIGNAL(returnPressed()), this, SLOT(on_lineEdit_usd_returnPressed()));
+    connect(getWidget<QLineEdit*>("lineEdit_jpy"), SIGNAL(returnPressed()), this, SLOT(on_lineEdit_jpy_returnPressed()));
+}
+
+void MainWindow::on_actionExchange_rate_trend_triggered()
+{
+    QMessageBox msgBox("", "Computing...",
+                       QMessageBox::Information, 0, 0, 0,
+                       nullptr, Qt::WindowTitleHint |
+                       Qt::CustomizeWindowHint | Qt::FramelessWindowHint);
+    msgBox.setStandardButtons(0);
+    msgBox.show();
+
+    QWidget *wdg = new QWidget;
+
+    QtCharts::QLineSeries *series = new QtCharts::QLineSeries();
+
+    QDate initial;
+    initial.setDate(2017, 1, 1);
+    QDate end = QDate::currentDate();
+    while (initial <= end)
+    {
+        CurrencyConverter curr("EUR", initial);
+        initial = initial.addDays(1);
+        QDateTime momentInTime;
+        momentInTime.setDate(initial);
+        if (curr.getRate("USD") != 0)
+            series->append(momentInTime.toMSecsSinceEpoch(), curr.getRate("USD"));
+    }
+
+    QtCharts::QChart *chart = new QtCharts::QChart();
+    chart->addSeries(series);
+    chart->legend()->hide();
+    chart->setTitle("EUR -> USD Exchange rate trend");
+
+    QtCharts::QDateTimeAxis *axisX = new QtCharts::QDateTimeAxis;
+    axisX->setFormat("MMM yyyy");
+    axisX->setTitleText("Date");
+    chart->addAxis(axisX, Qt::AlignBottom);
+    series->attachAxis(axisX);
+
+    QtCharts::QValueAxis *axisY = new QtCharts::QValueAxis;
+    axisY->setLabelFormat("%f");
+    axisY->setTitleText("Exchange rate");
+    chart->addAxis(axisY, Qt::AlignLeft);
+    series->attachAxis(axisY);
+
+    QtCharts::QChartView *chartView = new QtCharts::QChartView(chart);
+    chartView->setRenderHint(QPainter::Antialiasing);
+    wdg->setLayout(new QVBoxLayout());
+    wdg->setMinimumSize(650, 550);
+
+    chartView->setParent(wdg);
+
+    msgBox.close();
+
+    wdg->show();
 }

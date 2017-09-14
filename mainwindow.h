@@ -46,6 +46,8 @@ private slots:
 
     void on_actionCurrent_exchange_rates_triggered();
 
+    void on_actionExchange_rate_trend_triggered();
+
 private:
     Ui::MainWindow *ui;
 
@@ -73,9 +75,13 @@ private:
 
     void clearLayout();
 
-    QByteArray readExchangeRatesURL(QString base);
+    void createNumericRepresentationLayout();
 
-    void getExchangeRates(QByteArray byteArray, QMap<QString, double> *eRates);
+    void createTemperatureConversionLayout();
+
+    void createCurrencyConversionLayout();
+
+    template<typename T> inline T getWidget(QString name) const;
 
 };
 

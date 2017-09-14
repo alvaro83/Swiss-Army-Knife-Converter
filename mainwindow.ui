@@ -91,6 +91,8 @@
        <string>Currency</string>
       </property>
       <addaction name="actionCurrent_exchange_rates"/>
+      <addaction name="separator"/>
+      <addaction name="actionExchange_rate_trend"/>
      </widget>
      <addaction name="menuMath"/>
      <addaction name="menuPhysics"/>
@@ -141,6 +143,11 @@
   <action name="actionCurrent_exchange_rates">
    <property name="text">
     <string>Current exchange rates</string>
+   </property>
+  </action>
+  <action name="actionExchange_rate_trend">
+   <property name="text">
+    <string>Exchange rate trend</string>
    </property>
   </action>
  </widget>
