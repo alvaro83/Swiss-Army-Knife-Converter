@@ -3,6 +3,7 @@
 
 #include <QMainWindow>
 #include <QtNetwork/QNetworkReply>
+#include <QtCharts/QLineSeries>
 #include "temperatureconverter.h"
 
 namespace Ui {
@@ -47,6 +48,8 @@ private slots:
     void on_actionCurrent_exchange_rates_triggered();
 
     void on_actionExchange_rate_trend_triggered();
+
+    void displayExchangeRateTrend();
 
 private:
     Ui::MainWindow *ui;

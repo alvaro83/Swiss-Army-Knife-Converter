@@ -29,14 +29,17 @@ SOURCES += \
         mainwindow.cpp \
     temperatureconverter.cpp \
     aboutdialog.cpp \
-    currencyconverter.cpp
+    currencyconverter.cpp \
+    exchangeratetrendselector.cpp
 
 HEADERS += \
         mainwindow.h \
     temperatureconverter.h \
     aboutdialog.h \
-    currencyconverter.h
+    currencyconverter.h \
+    exchangeratetrendselector.h
 
 FORMS += \
         mainwindow.ui \
-    aboutdialog.ui
+    aboutdialog.ui \
+    exchangeratetrendselector.ui

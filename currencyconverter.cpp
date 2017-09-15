@@ -5,6 +5,12 @@
 #include <QJsonObject>
 #include <QEventLoop>
 #include <QObject>
+#include <QVBoxLayout>
+#include <QtCharts/QLineSeries>
+#include <QtCharts/QChart>
+#include <QtCharts/QChartView>
+#include <QtCharts/QDateTimeAxis>
+#include <QtCharts/QValueAxis>
 
 CurrencyConverter::CurrencyConverter(QString base, QDate date)
 {
@@ -61,4 +67,43 @@ void CurrencyConverter::getExchangeRates(QByteArray byteArray)
         QJsonValue value = rates_json.value(i.key());
         rates[i.key()] = value.toDouble();
     }
+}
+
+void CurrencyConverter::computeExchangeRateTrend(QDate initial, QDate end, QWidget* parent)
+{
+    QtCharts::QLineSeries* series = new QtCharts::QLineSeries(parent);
+
+    while (initial <= end)
+    {
+        CurrencyConverter curr("EUR", initial);
+        initial = initial.addDays(1);
+        QDateTime momentInTime;
+        momentInTime.setDate(initial);
+        if (curr.getRate("USD") != 0)
+            series->append(momentInTime.toMSecsSinceEpoch(), curr.getRate("USD"));
+    }
+
+    QtCharts::QChart* chart = new QtCharts::QChart();
+    chart->setParent(parent);
+    chart->addSeries(series);
+    chart->legend()->hide();
+    chart->setTitle("EUR -> USD Exchange rate trend");
+
+    QtCharts::QDateTimeAxis* axisX = new QtCharts::QDateTimeAxis(chart);
+    axisX->setFormat("MMM yyyy");
+    axisX->setTitleText("Date");
+    chart->addAxis(axisX, Qt::AlignBottom);
+    series->attachAxis(axisX);
+
+    QtCharts::QValueAxis* axisY = new QtCharts::QValueAxis(chart);
+    axisY->setLabelFormat("%f");
+    axisY->setTitleText("Exchange rate");
+    chart->addAxis(axisY, Qt::AlignLeft);
+    series->attachAxis(axisY);
+
+    QtCharts::QChartView* chartView = new QtCharts::QChartView(chart, parent);
+    chartView->setRenderHint(QPainter::Antialiasing);
+    chart->setMinimumSize(650, 550);
+    parent->setLayout(new QVBoxLayout());
+    parent->setMinimumSize(650, 550);
 }

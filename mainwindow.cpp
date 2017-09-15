@@ -3,6 +3,7 @@
 #include "temperatureconverter.h"
 #include "currencyconverter.h"
 #include "aboutdialog.h"
+#include "exchangeratetrendselector.h"
 #include <QMessageBox>
 #include <QGridLayout>
 #include <QPushButton>
@@ -510,55 +511,34 @@ void MainWindow::on_actionCurrent_exchange_rates_triggered()
 
 void MainWindow::on_actionExchange_rate_trend_triggered()
 {
-    QMessageBox msgBox("", "Computing...",
-                       QMessageBox::Information, 0, 0, 0,
-                       nullptr, Qt::WindowTitleHint |
-                       Qt::CustomizeWindowHint | Qt::FramelessWindowHint);
-    msgBox.setStandardButtons(0);
-    msgBox.show();
+    ExchangeRateTrendSelector selDlg(this);
 
-    QWidget *wdg = new QWidget;
+    connect(&selDlg, SIGNAL(accepted()), this, SLOT(displayExchangeRateTrend()));
 
-    QtCharts::QLineSeries *series = new QtCharts::QLineSeries();
+    selDlg.exec();
+}
 
-    QDate initial;
-    initial.setDate(2017, 1, 1);
-    QDate end = QDate::currentDate();
-    while (initial <= end)
+void MainWindow::displayExchangeRateTrend()
+{
+    QObject* obj = sender();
+    ExchangeRateTrendSelector* selector = qobject_cast<ExchangeRateTrendSelector*>(sender());
+    if (selector != NULL)
     {
-        CurrencyConverter curr("EUR", initial);
-        initial = initial.addDays(1);
-        QDateTime momentInTime;
-        momentInTime.setDate(initial);
-        if (curr.getRate("USD") != 0)
-            series->append(momentInTime.toMSecsSinceEpoch(), curr.getRate("USD"));
+        QMessageBox msgBox("", "Computing...",
+                           QMessageBox::Information, 0, 0, 0,
+                           nullptr, Qt::WindowTitleHint |
+                           Qt::CustomizeWindowHint | Qt::FramelessWindowHint);
+        msgBox.setStandardButtons(0);
+        msgBox.show();
+
+        QWidget *wdg = new QWidget();
+
+        QDate initial = selector->getInitialDate();
+        QDate end = selector->getEndDate();
+        CurrencyConverter::computeExchangeRateTrend(initial, end, wdg);
+
+        msgBox.close();
+
+        wdg->show();
     }
-
-    QtCharts::QChart *chart = new QtCharts::QChart();
-    chart->addSeries(series);
-    chart->legend()->hide();
-    chart->setTitle("EUR -> USD Exchange rate trend");
-
-    QtCharts::QDateTimeAxis *axisX = new QtCharts::QDateTimeAxis;
-    axisX->setFormat("MMM yyyy");
-    axisX->setTitleText("Date");
-    chart->addAxis(axisX, Qt::AlignBottom);
-    series->attachAxis(axisX);
-
-    QtCharts::QValueAxis *axisY = new QtCharts::QValueAxis;
-    axisY->setLabelFormat("%f");
-    axisY->setTitleText("Exchange rate");
-    chart->addAxis(axisY, Qt::AlignLeft);
-    series->attachAxis(axisY);
-
-    QtCharts::QChartView *chartView = new QtCharts::QChartView(chart);
-    chartView->setRenderHint(QPainter::Antialiasing);
-    wdg->setLayout(new QVBoxLayout());
-    wdg->setMinimumSize(650, 550);
-
-    chartView->setParent(wdg);
-
-    msgBox.close();
-
-    wdg->show();
 }
