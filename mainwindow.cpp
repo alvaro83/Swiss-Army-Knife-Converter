@@ -511,7 +511,12 @@ void MainWindow::on_actionCurrent_exchange_rates_triggered()
 
 void MainWindow::on_actionExchange_rate_trend_triggered()
 {
-    ExchangeRateTrendSelector selDlg(this);
+    show_exchange_rate_trend_dialog();
+}
+
+void MainWindow::show_exchange_rate_trend_dialog(QDate startSelectedDate, QDate endSelectedDate)
+{
+    ExchangeRateTrendSelector selDlg(startSelectedDate, endSelectedDate, this);
 
     connect(&selDlg, SIGNAL(accepted()), this, SLOT(displayExchangeRateTrend()));
 
@@ -524,6 +529,19 @@ void MainWindow::displayExchangeRateTrend()
     ExchangeRateTrendSelector* selector = qobject_cast<ExchangeRateTrendSelector*>(sender());
     if (selector != NULL)
     {
+        QWidget *wdg = new QWidget();
+
+        QDate initial = selector->getInitialDate();
+        QDate end = selector->getEndDate();
+        QString origin = selector->getOriginCurrency();
+        QString destination = selector->getDestinationCurrency();
+        if (origin == destination)
+        {
+            showErrorBox();
+            show_exchange_rate_trend_dialog(initial, end);
+            return;
+        }
+
         QMessageBox msgBox("", "Computing...",
                            QMessageBox::Information, 0, 0, 0,
                            nullptr, Qt::WindowTitleHint |
@@ -531,11 +549,7 @@ void MainWindow::displayExchangeRateTrend()
         msgBox.setStandardButtons(0);
         msgBox.show();
 
-        QWidget *wdg = new QWidget();
-
-        QDate initial = selector->getInitialDate();
-        QDate end = selector->getEndDate();
-        CurrencyConverter::computeExchangeRateTrend(initial, end, wdg);
+        CurrencyConverter::computeExchangeRateTrend(initial, end, origin, destination, wdg);
 
         msgBox.close();
 

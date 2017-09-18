@@ -5,6 +5,7 @@
 #include <QtNetwork/QNetworkReply>
 #include <QtCharts/QLineSeries>
 #include "temperatureconverter.h"
+#include "exchangeratetrendselector.h"
 
 namespace Ui {
 class MainWindow;
@@ -83,6 +84,9 @@ private:
     void createTemperatureConversionLayout();
 
     void createCurrencyConversionLayout();
+
+    void show_exchange_rate_trend_dialog(QDate startSelectedDate = ExchangeRateTrendSelector().getInitialDate(),
+                                         QDate endSelectedDate = ExchangeRateTrendSelector().getEndDate());
 
     template<typename T> inline T getWidget(QString name) const;
 

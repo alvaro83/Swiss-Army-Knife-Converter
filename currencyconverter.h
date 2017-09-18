@@ -11,7 +11,9 @@ public:
 
     double getRate(QString currency);
 
-    static void computeExchangeRateTrend(QDate initial, QDate end, QWidget* parent = NULL);
+    static void computeExchangeRateTrend(QDate initial, QDate end,
+                                         QString origin, QString destination,
+                                         QWidget* parent = NULL);
 
 private:
     QMap<QString, double> rates;

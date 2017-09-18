@@ -13,12 +13,18 @@ class ExchangeRateTrendSelector : public QDialog
 
 public:
     explicit ExchangeRateTrendSelector(QWidget *parent = 0);
+    ExchangeRateTrendSelector(QDate startSelectedDate,
+                              QDate endSelectedDate,
+                              QWidget *parent);
     ~ExchangeRateTrendSelector();
     QDate getInitialDate();
     QDate getEndDate();
+    QString getOriginCurrency();
+    QString getDestinationCurrency();
 
 private:
     Ui::ExchangeRateTrendSelector *ui;
+    QStringList currencies = QStringList() << "EUR" << "USD" << "JPY";
 };
 
 #endif // EXCHANGERATETRENDSELECTOR_H

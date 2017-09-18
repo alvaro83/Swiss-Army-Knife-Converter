@@ -69,25 +69,27 @@ void CurrencyConverter::getExchangeRates(QByteArray byteArray)
     }
 }
 
-void CurrencyConverter::computeExchangeRateTrend(QDate initial, QDate end, QWidget* parent)
+void CurrencyConverter::computeExchangeRateTrend(QDate initial, QDate end,
+                                                 QString origin, QString destination,
+                                                 QWidget* parent)
 {
     QtCharts::QLineSeries* series = new QtCharts::QLineSeries(parent);
 
     while (initial <= end)
     {
-        CurrencyConverter curr("EUR", initial);
+        CurrencyConverter curr(origin, initial);
         initial = initial.addDays(1);
         QDateTime momentInTime;
         momentInTime.setDate(initial);
-        if (curr.getRate("USD") != 0)
-            series->append(momentInTime.toMSecsSinceEpoch(), curr.getRate("USD"));
+        if (curr.getRate(destination) != 0)
+            series->append(momentInTime.toMSecsSinceEpoch(), curr.getRate(destination));
     }
 
     QtCharts::QChart* chart = new QtCharts::QChart();
     chart->setParent(parent);
     chart->addSeries(series);
     chart->legend()->hide();
-    chart->setTitle("EUR -> USD Exchange rate trend");
+    chart->setTitle(origin + " -> " + destination + " Exchange rate trend");
 
     QtCharts::QDateTimeAxis* axisX = new QtCharts::QDateTimeAxis(chart);
     axisX->setFormat("MMM yyyy");
