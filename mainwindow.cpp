@@ -525,11 +525,10 @@ void MainWindow::show_exchange_rate_trend_dialog(QDate startSelectedDate, QDate 
 
 void MainWindow::displayExchangeRateTrend()
 {
-    QObject* obj = sender();
     ExchangeRateTrendSelector* selector = qobject_cast<ExchangeRateTrendSelector*>(sender());
     if (selector != NULL)
     {
-        QWidget *wdg = new QWidget();
+        QDialog wdg;
 
         QDate initial = selector->getInitialDate();
         QDate end = selector->getEndDate();
@@ -542,8 +541,8 @@ void MainWindow::displayExchangeRateTrend()
             return;
         }
 
-        CurrencyConverter::computeExchangeRateTrend(initial, end, origin, destination, true, wdg);
+        CurrencyConverter::computeExchangeRateTrend(initial, end, origin, destination, true, &wdg);
 
-        wdg->show();
+        wdg.exec();
     }
 }
