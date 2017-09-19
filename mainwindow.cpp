@@ -542,16 +542,7 @@ void MainWindow::displayExchangeRateTrend()
             return;
         }
 
-        QMessageBox msgBox("", "Computing...",
-                           QMessageBox::Information, 0, 0, 0,
-                           nullptr, Qt::WindowTitleHint |
-                           Qt::CustomizeWindowHint | Qt::FramelessWindowHint);
-        msgBox.setStandardButtons(0);
-        msgBox.show();
-
-        CurrencyConverter::computeExchangeRateTrend(initial, end, origin, destination, wdg);
-
-        msgBox.close();
+        CurrencyConverter::computeExchangeRateTrend(initial, end, origin, destination, true, wdg);
 
         wdg->show();
     }

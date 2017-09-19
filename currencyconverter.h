@@ -13,6 +13,7 @@ public:
 
     static void computeExchangeRateTrend(QDate initial, QDate end,
                                          QString origin, QString destination,
+                                         bool displayProgress = true,
                                          QWidget* parent = NULL);
 
 private:

@@ -11,6 +11,7 @@
 #include <QtCharts/QChartView>
 #include <QtCharts/QDateTimeAxis>
 #include <QtCharts/QValueAxis>
+#include <QProgressDialog>
 
 CurrencyConverter::CurrencyConverter(QString base, QDate date)
 {
@@ -71,9 +72,20 @@ void CurrencyConverter::getExchangeRates(QByteArray byteArray)
 
 void CurrencyConverter::computeExchangeRateTrend(QDate initial, QDate end,
                                                  QString origin, QString destination,
-                                                 QWidget* parent)
+                                                 bool displayProgress, QWidget* parent)
 {
     QtCharts::QLineSeries* series = new QtCharts::QLineSeries(parent);
+
+    int days = QDateTime(initial).daysTo(QDateTime(end)) + 1;
+    float s = days/100.0;
+
+    QProgressDialog bar;
+
+    if (displayProgress)
+    {
+        bar.setCancelButton(0);
+        bar.show();
+    }
 
     while (initial <= end)
     {
@@ -83,7 +95,13 @@ void CurrencyConverter::computeExchangeRateTrend(QDate initial, QDate end,
         momentInTime.setDate(initial);
         if (curr.getRate(destination) != 0)
             series->append(momentInTime.toMSecsSinceEpoch(), curr.getRate(destination));
+        int val = 100.0 - floor((momentInTime.daysTo(QDateTime(end)))/ s);
+        if (displayProgress)
+            bar.setValue(val);
     }
+
+    if (displayProgress)
+        bar.close();
 
     QtCharts::QChart* chart = new QtCharts::QChart();
     chart->setParent(parent);
@@ -92,7 +110,7 @@ void CurrencyConverter::computeExchangeRateTrend(QDate initial, QDate end,
     chart->setTitle(origin + " -> " + destination + " Exchange rate trend");
 
     QtCharts::QDateTimeAxis* axisX = new QtCharts::QDateTimeAxis(chart);
-    axisX->setFormat("MMM yyyy");
+    axisX->setFormat("dd MMM yyyy");
     axisX->setTitleText("Date");
     chart->addAxis(axisX, Qt::AlignBottom);
     series->attachAxis(axisX);
