@@ -4,8 +4,10 @@
 #include <QtNetwork/QNetworkReply>
 #include <QtCharts/QLineSeries>
 
-class CurrencyConverter
+class CurrencyConverter : QObject
 {
+    Q_OBJECT
+
 public:
     CurrencyConverter(QString base, QDate date = QDate::currentDate());
 
@@ -13,8 +15,7 @@ public:
 
     static void computeExchangeRateTrend(QDate initial, QDate end,
                                          QString origin, QString destination,
-                                         bool displayProgress = true,
-                                         QWidget* parent = NULL);
+                                         bool displayProgress = true);
 
 private:
     QMap<QString, double> rates;

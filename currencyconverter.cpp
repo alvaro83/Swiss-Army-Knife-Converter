@@ -1,4 +1,5 @@
 #include "currencyconverter.h"
+#include "exchangeratetrendviewer.h"
 #include <QtNetwork/QNetworkAccessManager>
 #include <QtNetwork/QNetworkReply>
 #include <QJsonDocument>
@@ -12,6 +13,7 @@
 #include <QtCharts/QDateTimeAxis>
 #include <QtCharts/QValueAxis>
 #include <QProgressDialog>
+#include <QPushButton>
 
 CurrencyConverter::CurrencyConverter(QString base, QDate date)
 {
@@ -72,9 +74,11 @@ void CurrencyConverter::getExchangeRates(QByteArray byteArray)
 
 void CurrencyConverter::computeExchangeRateTrend(QDate initial, QDate end,
                                                  QString origin, QString destination,
-                                                 bool displayProgress, QWidget* parent)
+                                                 bool displayProgress)
 {
-    QtCharts::QLineSeries* series = new QtCharts::QLineSeries(parent);
+    ExchangeRateTrendViewer wdg;
+
+    QtCharts::QLineSeries* series = new QtCharts::QLineSeries(&wdg);
 
     int days = QDateTime(initial).daysTo(QDateTime(end)) + 1;
     float s = days/100.0;
@@ -104,10 +108,11 @@ void CurrencyConverter::computeExchangeRateTrend(QDate initial, QDate end,
         bar.close();
 
     QtCharts::QChart* chart = new QtCharts::QChart();
-    chart->setParent(parent);
+    chart->setParent(&wdg);
     chart->addSeries(series);
     chart->legend()->hide();
     chart->setTitle(origin + " -> " + destination + " Exchange rate trend");
+    chart->setMinimumSize(650, 550);
 
     QtCharts::QDateTimeAxis* axisX = new QtCharts::QDateTimeAxis(chart);
     axisX->setFormat("dd MMM yyyy");
@@ -121,9 +126,8 @@ void CurrencyConverter::computeExchangeRateTrend(QDate initial, QDate end,
     chart->addAxis(axisY, Qt::AlignLeft);
     series->attachAxis(axisY);
 
-    QtCharts::QChartView* chartView = new QtCharts::QChartView(chart, parent);
-    chartView->setRenderHint(QPainter::Antialiasing);
-    chart->setMinimumSize(650, 550);
-    parent->setLayout(new QVBoxLayout());
-    parent->setMinimumSize(650, 550);
+    wdg.findChild<QtCharts::QChartView*>("rateViewer")->setChart(chart);
+    wdg.findChild<QtCharts::QChartView*>("rateViewer")->setRenderHint(QPainter::Antialiasing);
+
+    wdg.exec();
 }

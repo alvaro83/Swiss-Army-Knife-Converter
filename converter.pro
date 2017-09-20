@@ -30,16 +30,19 @@ SOURCES += \
     temperatureconverter.cpp \
     aboutdialog.cpp \
     currencyconverter.cpp \
-    exchangeratetrendselector.cpp
+    exchangeratetrendselector.cpp \
+    exchangeratetrendviewer.cpp
 
 HEADERS += \
         mainwindow.h \
     temperatureconverter.h \
     aboutdialog.h \
     currencyconverter.h \
-    exchangeratetrendselector.h
+    exchangeratetrendselector.h \
+    exchangeratetrendviewer.h
 
 FORMS += \
         mainwindow.ui \
     aboutdialog.ui \
-    exchangeratetrendselector.ui
+    exchangeratetrendselector.ui \
+    exchangeratetrendviewer.ui
