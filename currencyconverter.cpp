@@ -5,14 +5,11 @@
 #include <QJsonDocument>
 #include <QJsonObject>
 #include <QEventLoop>
-#include <QObject>
-#include <QVBoxLayout>
 #include <QtCharts/QLineSeries>
 #include <QtCharts/QChart>
 #include <QtCharts/QChartView>
 #include <QtCharts/QDateTimeAxis>
 #include <QtCharts/QValueAxis>
-#include <QPushButton>
 
 CurrencyConverter::CurrencyConverter()
 {
@@ -88,13 +85,13 @@ void CurrencyConverter::displayExchangeRateTrend(QDate initial, QDate end,
     while (initial <= end)
     {
         computeExchangeRates(origin, initial);
-        initial = initial.addDays(1);
         QDateTime momentInTime;
         momentInTime.setDate(initial);
         if (getRate(destination) != 0)
             series->append(momentInTime.toMSecsSinceEpoch(), getRate(destination));
         int val = 100.0 - floor((momentInTime.daysTo(QDateTime(end)))/ s);
         emit setProgress(val);
+        initial = initial.addDays(1);
     }
     emit computationFinished();
 

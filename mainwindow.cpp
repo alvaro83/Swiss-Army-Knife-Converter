@@ -8,15 +8,6 @@
 #include <QGridLayout>
 #include <QPushButton>
 #include <QLineEdit>
-#include <QtNetwork/QNetworkAccessManager>
-#include <QtNetwork/QNetworkReply>
-#include <QJsonDocument>
-#include <QJsonObject>
-#include <QtCharts/QLineSeries>
-#include <QtCharts/QChart>
-#include <QtCharts/QChartView>
-#include <QtCharts/QDateTimeAxis>
-#include <QtCharts/QValueAxis>
 #include <QProgressDialog>
 
 MainWindow::MainWindow(QWidget *parent) :
