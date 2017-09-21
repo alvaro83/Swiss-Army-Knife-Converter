@@ -12,16 +12,18 @@
 #include <QtCharts/QChartView>
 #include <QtCharts/QDateTimeAxis>
 #include <QtCharts/QValueAxis>
-#include <QProgressDialog>
 #include <QPushButton>
 
-CurrencyConverter::CurrencyConverter(QString base, QDate date)
+CurrencyConverter::CurrencyConverter()
 {
-    QByteArray bts = this->readExchangeRatesURL(base, date);
-
     rates.insert("EUR", 0);
     rates.insert("USD", 0);
     rates.insert("JPY", 0);
+}
+
+void CurrencyConverter::computeExchangeRates(QString base, QDate date)
+{
+    QByteArray bts = this->readExchangeRatesURL(base, date);
     getExchangeRates(bts);
 }
 
@@ -72,40 +74,29 @@ void CurrencyConverter::getExchangeRates(QByteArray byteArray)
     }
 }
 
-void CurrencyConverter::computeExchangeRateTrend(QDate initial, QDate end,
+void CurrencyConverter::displayExchangeRateTrend(QDate initial, QDate end,
                                                  QString origin, QString destination,
-                                                 bool displayProgress)
+                                                 QWidget* parent)
 {
-    ExchangeRateTrendViewer wdg;
+    ExchangeRateTrendViewer wdg(parent);
 
     QtCharts::QLineSeries* series = new QtCharts::QLineSeries(&wdg);
 
     int days = QDateTime(initial).daysTo(QDateTime(end)) + 1;
     float s = days/100.0;
 
-    QProgressDialog bar;
-
-    if (displayProgress)
-    {
-        bar.setCancelButton(0);
-        bar.show();
-    }
-
     while (initial <= end)
     {
-        CurrencyConverter curr(origin, initial);
+        computeExchangeRates(origin, initial);
         initial = initial.addDays(1);
         QDateTime momentInTime;
         momentInTime.setDate(initial);
-        if (curr.getRate(destination) != 0)
-            series->append(momentInTime.toMSecsSinceEpoch(), curr.getRate(destination));
+        if (getRate(destination) != 0)
+            series->append(momentInTime.toMSecsSinceEpoch(), getRate(destination));
         int val = 100.0 - floor((momentInTime.daysTo(QDateTime(end)))/ s);
-        if (displayProgress)
-            bar.setValue(val);
+        emit setProgress(val);
     }
-
-    if (displayProgress)
-        bar.close();
+    emit computationFinished();
 
     QtCharts::QChart* chart = new QtCharts::QChart();
     chart->setParent(&wdg);

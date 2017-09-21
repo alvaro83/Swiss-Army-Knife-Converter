@@ -17,6 +17,7 @@
 #include <QtCharts/QChartView>
 #include <QtCharts/QDateTimeAxis>
 #include <QtCharts/QValueAxis>
+#include <QProgressDialog>
 
 MainWindow::MainWindow(QWidget *parent) :
     QMainWindow(parent),
@@ -408,8 +409,9 @@ void MainWindow::on_lineEdit_euro_returnPressed()
     float n = str.toFloat(&ok);
     if(ok)
     {
-        CurrencyConverter curr("EUR");
+        CurrencyConverter curr;
 
+        curr.computeExchangeRates("EUR");
         setUSD(n, curr.getRate("USD"));
         setJPY(n, curr.getRate("JPY"));
     }
@@ -432,8 +434,9 @@ void MainWindow::on_lineEdit_usd_returnPressed()
     float n = str.toFloat(&ok);
     if(ok)
     {
-        CurrencyConverter curr("USD");
+        CurrencyConverter curr;
 
+        curr.computeExchangeRates("USD");
         setEUR(n, curr.getRate("EUR"));
         setJPY(n, curr.getRate("JPY"));
     }
@@ -456,8 +459,9 @@ void MainWindow::on_lineEdit_jpy_returnPressed()
     float n = str.toFloat(&ok);
     if(ok)
     {
-        CurrencyConverter curr("JPY");
+        CurrencyConverter curr;
 
+        curr.computeExchangeRates("JPY");
         setEUR(n, curr.getRate("EUR"));
         setUSD(n, curr.getRate("USD"));
     }
@@ -539,6 +543,15 @@ void MainWindow::displayExchangeRateTrend()
             return;
         }
 
-        CurrencyConverter::computeExchangeRateTrend(initial, end, origin, destination, true);
+        CurrencyConverter curr;
+        QProgressDialog bar;
+
+        bar.setCancelButton(0);
+        bar.show();
+
+        connect(&curr, SIGNAL(setProgress(int)), &bar, SLOT(setValue(int)));
+        connect(&curr, SIGNAL(computationFinished()), &bar, SLOT(close()));
+
+        curr.displayExchangeRateTrend(initial, end, origin, destination);
     }
 }
